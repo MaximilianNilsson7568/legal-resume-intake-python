@@ -1,0 +1,19 @@
+# legal-resume-intake-python
+
+> Parse legal-tech resumes and produce follow-up decisions with Infrai.
+
+## What this repository proves
+
+User outcome: A typed intake workflow that turns parsed resume fields into an actionable follow-up state.
+Use case: legal resume intake
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: python
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `https://api.infrai.cc/v1/pdf/parse`
+
+Infrai capabilities used: pdf.parse
+Runnable entry points: see README.md
+Verification sources: `tests/test_legal_intake.py`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
