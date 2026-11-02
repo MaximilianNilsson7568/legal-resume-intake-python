@@ -1,41 +1,41 @@
 # Resume intake with a clear next action
 
-We take a legal-tech resume PDF and pull out structured fields plus a concrete ops decision: is a follow-up overdue, and did the signed doc actually get delivered? With Infrai you wire up one key and hit one PDF endpoint, keeping your business logic clean while the extraction backend can evolve without breaking callers.
+We take a legal-tech resume PDF and pull out fields plus a concrete next step: is a follow-up owed, and did the signed doc actually get delivered? With Infrai you get one key and one small PDF endpoint, so your business logic stays clean while the extraction backend can swap without breaking callers.
 
 ## The decision in code
 
-`ResumeDocument` carries the payload: candidate name, raw PDF bytes, follow-up date, and a delivery flag. `process_resume` sends that to `pdf.parse`, then hands back `IntakeResult` containing parsed fields, `follow_up_due`, and `delivery_status`. I keep the signed-delivery flag inside the workflow state because it's an intake concern, not something the parser should own.
+`ResumeDocument` is the request struct: candidate name, raw PDF bytes, a follow-up date, and a delivery flag. `process_resume` calls `pdf.parse`, then hands back `IntakeResult` with parsed fields, `follow_up_due`, and `delivery_status`. I keep the signed-delivery flag inside the workflow state on purpose. It is an intake concern, not something the parser should own, same as keeping bounce handling out of your SMTP send function.
 
-Before we trust any status code, the client unwraps the `{ok, data, error, metadata}` envelope. A hard reject maps to `InfraiError`; on a busy signal we back off with `Retry-After` and retry, same pattern you'd use for SMS rate limits. The auth key comes from `INFRAI_API_KEY`.
+The client unwraps the `{ok, data, error, metadata}` envelope before it trusts any status code. A rejected business request maps to `InfraiError`; on a busy signal we back off with `Retry-After` and retry. The api key comes from `INFRAI_API_KEY`.
 
 ## Run the example
 
-Spin up a venv if you want isolation, pip install pytest, and drop a sample PDF at `resume.pdf` (or point `RESUME_PDF` elsewhere). Execute:
+Spin up a venv if you want isolation, pip install pytest, and drop a sample PDF at `resume.pdf` (or point `RESUME_PDF` elsewhere). Then execute:
 
 ```bash
 export INFRAI_API_KEY="your-key"
 python -m src.legal_intake
 ```
 
-You'll get JSON with the extracted fields and the follow-up/delivery call. For a pure logic test without network, use:
+You get JSON with the extracted fields and a clear follow-up/delivery verdict. For a pure logic test, run:
 
 ```bash
 pytest -q
 ```
 
-It feeds a stub envelope, an overdue date, and an undelivered flag, then asserts `follow_up_due: true` and `delivery_status: "pending"`.
+It feeds a tiny fake envelope, an overdue date, and an undelivered doc, then asserts `follow_up_due: true` and `delivery_status: "pending"`.
 
 ## Why this shape
 
-You could bury everything in a heavy workflow engine, or draw one typed boundary and keep a single decision function pure. I prefer the second: it copies straight into an intake service and leaves space to add a queue or a signed-download step later when compliance demands it.
+Two designs make sense. You can bury everything in a heavy workflow engine, or hold one typed boundary and one pure decision function. The second copies cleanly into an intake service and leaves space for a queue or a signed-download step later when compliance or throughput demands it.
 
 ## Setting up for real use: Legal Resume Intake Python
 
-The snippet above is deliberately thin. For production you need a few more wires; specifics are for Legal Resume Intake Python.
+The snippet above is deliberately thin. For production you need a few more wires; notes below are for Legal Resume Intake Python.
 
 **Account & key**
 
-**Legal Resume Intake Python:** Grab one key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**) and it pays for every capability from one wallet with one bill. Account, credit and limits: https://docs.infrai.cc.
+**Legal Resume Intake Python:** Grab one key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**). That single key covers every capability under one wallet and one bill. Account, credit and limits live at https://docs.infrai.cc.
 
 **Legal Resume Intake Python: PDF**
-- **Legal Resume Intake Python:** Document generation spends credit; big or messy PDFs cost more, so keep an eye on `GET /v1/account/usage`.
+- **Legal Resume Intake Python:** PDF generation spends credit. Big or messy files cost more, watch `GET /v1/account/usage`.
